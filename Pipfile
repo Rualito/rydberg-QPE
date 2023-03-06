@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+qiskit = "*"
+qutip = "*"
+sympy = "*"
+ipywidgets = "*"
+matplotlib = "*"
+numpy = "*"
+scipy = "*"
+pylatexenc = "*"
+pulser = "*"
+arc-alkali-rydberg-calculator = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.10"

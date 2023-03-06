@@ -1,0 +1,148 @@
+\documentclass[margin=0.2in]{standalone}
+\usepackage{physics} 
+
+\usepackage{pgfplots}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{angles, quotes}
+
+\tdplotsetmaincoords{0}{0}
+\pgfplotsset{compat=newest}
+ 
+\begin{document}
+ 
+\begin{tikzpicture}[tdplot_main_coords, scale =1.5]
+    % Draw shaded circle
+    % \shade[ball color = lightgray,
+    % opacity = 0.5
+    % ] (0,0,0) circle (1cm);
+    
+    \draw (0, 0) node[circle, fill, inner sep=1, label=below:${c=x_1}$] (orig) {};
+    % draw arcs 
+
+    % \tdplotsetrotatedcoords{0}{0}{0};
+    \draw[dashed, gray] (0,0) circle (1.26); 
+    \draw[dashed, gray] (0,0) circle (1.6); 
+    \draw[dashed, gray] (0,0) circle (2);
+    
+    \draw node[label=$R$] at (150:1.26) {};
+    \draw node[label=$R^2$] at (180:1.6) {}; 
+    \draw node[label=$R^3$] at (210:2.3) {}; 
+
+    
+
+    \coordinate (A) at (0,1.26);
+    \draw  node[circle, fill, inner sep=1, label=left:$x_2$] at (A)  {};
+
+    \coordinate (B) at (1.385,0.8);
+    \draw  node[circle, fill, inner sep=1, label=right:$x_3$] at (B)  {};
+
+    \coordinate (C) at (1.932,-0.517);
+    \draw  node[circle, fill, inner sep=1, label=right:$x_4$] at (C)  {};
+
+    \draw node[circle, fill=gray, inner sep=2]  (a1) at (170:1) {};
+
+    \draw node[circle, fill=gray, inner sep=2] (a2) at (0:1)  {};
+
+    \node[color=gray] (a0) at (-90:1)  {Ancillas}; 
+
+    \draw [ gray] (a0) to[bend left]  (a1);
+    \draw [gray] (a0) to[bend right]  (a2);
+
+    % \draw [dashed, gray, -stealth, inner sept=1] (-95:1) --  (170:1) ;
+
+    % \draw[dashed, gray] (0,0) circle (1); 
+    % \draw[dashed, gray] (0,0) circle (1); 
+
+    % \draw[thick, -stealth] (orig) -- (A) node[left, midway] {$R$};
+
+    % \draw[thick, -stealth] (orig) -- (B) node[above left , midway] {$R^2$};
+
+    % \draw[thick, -stealth] (orig) -- (C) node[below left , midway] {$R^3$};
+
+    \draw[thick, stealth-stealth] (A) -- (B) node[above , midway] {$D$};
+
+    \draw[thick, stealth-stealth] (B) -- (C) node[right , midway] {$D$};
+
+    % \tdplotsetrotatedcoords{0}{0}{0};
+    % \draw[dashed,
+    %     tdplot_rotated_coords,
+    %     gray
+    % ] (0,0,0) circle (1);
+    
+    % \tdplotsetrotatedcoords{90}{90}{90};
+    % \draw[dashed,
+    %     tdplot_rotated_coords,
+    %     gray
+    % ] (1,0,0) arc (0:360:1);
+    
+    % \tdplotsetrotatedcoords{0}{90}{90};
+    % \draw[dashed,
+    %     tdplot_rotated_coords,
+    %     gray
+    % ] (1,0,0) arc (0:360:1);
+
+    % \tdplotsetrotatedcoords{-45}{-90}{-90};
+    % \draw[dashed,
+    %     tdplot_rotated_coords,
+    %     gray
+    % ] (1,0,0) arc (0:360:1);
+
+    % \tdplotsetrotatedcoords{0}{0}{0};
+    % \draw[dashed,
+    %     tdplot_rotated_coords,
+    %     gray
+    % ] (1,0,0) arc (0:45:1);
+    % Create a point (P)
+    % \coordinate (P) at ({1/sqrt(3)},{1/sqrt(3)},{1/sqrt(3)});
+
+    % \coordinate (A) at (0,0,0);
+    % \coordinate (B) at (1,0,0);
+    % \coordinate (C) at ({2/3},{2/3},0);
+    % \coordinate (D) at ({1/2},{1/2},{1/2});
+
+    % \draw  node[circle, fill, inner sep=1, label=left:$x_1$] at (A)  {};
+    % \draw  node[circle, fill, inner sep=1, label=below:$x_2$] at (B)  {};
+    % \draw  node[circle, fill, inner sep=1, label=right:$x_3$] at (C)  {};
+    % \draw  node[circle, fill, inner sep=1, label=above:$x_4$] at (D)  {};
+
+    % \draw[thick, -stealth] (A) -- (D) node[above, midway] {$R^3$};
+    % \draw[thick, -stealth] (A) -- (B) node[below, midway] {$R$};
+    % \draw[thick, -stealth] (A) -- (C) node[above, midway] {$R^2$};
+    % \draw[thick, -stealth] (B) -- (C) node[below right, midway] {$R$};
+    % \draw[thick, -stealth] (B) -- (D) node[right, midway] {$R^2$};
+    % \draw[thick, -stealth] (C) -- (D) node[above, midway] {$R$};
+
+    % \draw ({1/sqrt(3)},{1/sqrt(3)},{1/sqrt(3)}) node[right] (P1) {$\ket{\psi}$};
+
+    % \draw (0,0,1) node[circle, fill, inner sep=1, label=right:$\ket{0}$] (k0) {};
+    % \draw (0,0,-1) node[circle, fill, inner sep=1, label=right:$\ket{1}$] (k1) {};
+    % \draw[gray, thin, dashed] (orig) -- (k1) ;
+    
+    % \draw node[circle, fill, inner sep=1] at (P) (P_t) {$P$};
+    
+    % Projection of the point on X and y axes
+    % \draw[thin, dashed] (P) -- ({1/sqrt(3)},{1/sqrt(3)},0);
+    % \draw[thin, dashed]  (0,0,0) -- ({1/sqrt(2)},{1/sqrt(2)},0) node (rho) {};
+    
+    % \draw[thin, dashed] ({1/sqrt(3)},{1/sqrt(3)},0) --++
+    % (0,{-1/sqrt(3)},0);
+    % \draw[thin, dashed] ({1/sqrt(3)},{1/sqrt(3)},0) --++
+    % ({-1/sqrt(3)},0,0);
+    
+    % Axes in 3 d coordinate system
+    % \draw[-stealth] (0,0,0) -- (1.0,0,0) node[below] (x) {$x$};
+    % \draw[-stealth] (0,0,0) -- (0,1.0,0) node[right] (y) {$y$};
+    % \draw[-stealth] (0,0,0) -- (0,0,1.0) node[above] (z) {$z$};
+    % \draw[dashed, gray] (0,0,0) -- (-1,0,0);
+    % \draw[dashed, gray] (0,0,0) -- (0,-1,0);
+    
+    % Line from the origin to (P)
+    
+
+    % \pic [draw=black, text=black, ->, "$\phi$", angle radius=20] {angle = x--orig--rho};
+    % \pic [draw=black, text=black, <-, "$\theta$", angle eccentricity=1.4] {angle = P--orig--z};
+  
+
+\end{tikzpicture}
+ 
+\end{document}
