@@ -27,6 +27,8 @@ from pulser.devices._device_datacls import Device
 
 from pulser_simulation.simulation import Simulation
 
+from generalSequence import GeneralSequence
+
 
 
 SUPPORTED_NOISE = {
@@ -51,9 +53,16 @@ SUPPORTED_NOISE = {
 
 class GeneralSimulation(Simulation):
     # __init__ doesn't look problematic
-    def __init__(self, sequence: Sequence, sampling_rate: float = 1, config: Optional[SimConfig] = None, evaluation_times: Union[float, str, ArrayLike] = "Full", with_modulation: bool = False) -> None:
+    # Methods to overload:
+    # run()
+    # 
+    # 
+    #  
+
+    def __init__(self, sequence: GeneralSequence, sampling_rate: float = 1, config: Optional[SimConfig] = None, evaluation_times: Union[float, str, ArrayLike] = "Full", with_modulation: bool = False) -> None:
         # super().__init__(sequence, sampling_rate, config, evaluation_times, with_modulation)
-        if not isinstance(sequence, Sequence):
+        
+        if not isinstance(sequence, sequence):
             raise TypeError(
                 "The provided sequence has to be a valid "
                 "pulser.Sequence instance."
@@ -76,8 +85,8 @@ class GeneralSimulation(Simulation):
         self._interaction = 'ising'
         if self._seq._in_xy:
             self._interaction = 'XY'
-        elif np.all([ch in self._seq.declared_channels for ch in ('rydberg', 'RYDBERG')]):
-            self._interaction = 'asym'
+        elif self._seq._in_multi: 
+            self._interaction = 'multi'
         
         self._qdict = self._seq.qubit_info
         self._size = len(self._qdict)
@@ -323,12 +332,13 @@ class GeneralSimulation(Simulation):
 
 
     def _build_basis_and_op_matrices(self) -> None:
-        if self._interaction == "asym":
+        if self._interaction == "multi":
             # Digital, ground-rydberg and XY
-            self.basis_name = 'asym'
-            self.dim = 4
-            basis = ['g', 'h', 'r', 'R']
-            projectors = ['gg', 'hg', 'gr', 'gR', 'rr', 'rR', 'Rr', 'RR' ]
+            self.basis_name = 'multi'
+            self.dim = 2 + len(self._seq.device.rydberg_states)
+            basis = ['g', 'h'] + [*self._seq.device.state_labels]
+            # digital basis + ground-rydbergs + ry-ry 
+            projectors = [('g', 'g'), ('h','g')] + [ ('g',ry) for ry in self._seq.device.state_labels ] + [(r1,r2) for r1 in self._seq.device.state_labels for r2 in self._seq.device.state_labels]
         elif self._interaction == "XY":
             self.basis_name = "XY"
             self.dim = 2
@@ -356,7 +366,7 @@ class GeneralSimulation(Simulation):
         self.op_matrix = {"I": qutip.qeye(self.dim)}
 
         for proj in projectors:
-            self.op_matrix["sigma_" + proj] = (
+            self.op_matrix["sigma_" + str(proj)] = (
                 self.basis[proj[0]] * self.basis[proj[1]].dag()
             )
 
@@ -375,7 +385,7 @@ class GeneralSimulation(Simulation):
         if not hasattr(self, "basis_name"):
             self._build_basis_and_op_matrices()
 
-        def make_vdw_term(q1: QubitId, q2: QubitId) -> qutip.Qobj:
+        def make_vdw_term(q1: QubitId, q2: QubitId, ry1:str, ry2:str) -> qutip.Qobj:
             # TODO: vdw terms between rr and RR? Device needs two interaction terms
             """Construct the Van der Waals interaction Term.
 
@@ -385,10 +395,14 @@ class GeneralSimulation(Simulation):
             1/hbar factor.
             """
             dist = np.linalg.norm(self._qdict[q1] - self._qdict[q2])
-            U = 0.5 * self._seq._device.interaction_coeff / dist**6
-            return U * self.build_operator([("sigma_rr", [q1, q2])])
+            op = self.build_operator([("sigma_"+str( (ry1,ry2)), [q1, q2]), ("sigma_"+str((ry2,ry1)), [q2, q1])])
+            if (ry1, ry2) in self._seq.device.c6_dict:
+                U = 0.5 * self._seq.device.c6_dict[(ry1, ry2)]/ dist**6
+                return U * op
+            
+            return 0*op
 
-        def make_xy_term(q1: QubitId, q2: QubitId) -> qutip.Qobj:
+        def make_xy_term(q1: QubitId, q2: QubitId, ry1:str, ry2:str) -> qutip.Qobj:
             # TODO: AsymSequence has to define a magnetic field
             """Construct the XY interaction Term.
 
@@ -413,15 +427,21 @@ class GeneralSimulation(Simulation):
                 * (1 - 3 * cosine**2)
                 / dist**3
             )
+            if self._interaction == 'multi':
+                if (ry1, ry2) in self._seq.device.c3_dict:
+                    U = (
+                        0.5
+                        * cast(float, self._seq.device.c3_dict[(ry1, ry2)])
+                        * (1 - 3 * cosine**2)
+                        / dist**3
+                    )
+                    return U * self.build_operator([("sigma_"+str( (ry1,ry2)), [q1, q2]), ("sigma_"+str((ry2,ry1)), [q2, q1])])
+            
             if self._interaction == 'XY':
-
                 return U * self.build_operator(
                     [("sigma_du", [q1]), ("sigma_ud", [q2])]
                 )
-            else: # self._interaction == 'asym':
-                return U * self.build_operator(
-                    [("sigma_rR", [q1]), ("sigma_Rr", [q2])]
-                )
+            return 0
 
         def make_interaction_term(masked: bool = False) -> qutip.Qobj:
             if masked:
@@ -453,9 +473,19 @@ class GeneralSimulation(Simulation):
                     dipole_interaction += make_xy_term(q1, q2)
                 elif self._interaction == 'ising':
                     dipole_interaction += make_vdw_term(q1, q2)
-                else: # if asym
-                    dipole_interaction += make_xy_term(q1, q2)
-                    dipole_interaction += make_vdw_term(q1, q2)
+                elif self._interaction == 'multi':
+
+                    # Go through all possible state combinations
+                    for ry1 in self._seq.device.state_labels:
+                        for ry2 in self._seq.device.state_labels:
+                            dist = np.linalg.norm(self._qdict[q1] - self._qdict[q2])
+
+                            # if radius less than LeRoy radius, then assume XY interaction
+                            if dist < self._seq.device.rvdw_dict[(ry1, ry2)]: 
+                                dipole_interaction += make_xy_term(q1, q2)
+                            else:
+                                # otherwise assume van der Waals
+                                dipole_interaction += make_vdw_term(q1, q2)
 
                 
             return dipole_interaction
@@ -465,6 +495,7 @@ class GeneralSimulation(Simulation):
             samples = self.samples[addr][basis]
             operators = self.operators[addr][basis]
             # Choose operator names according to addressing:
+            # TODO: change op_ids according to basis. All the possible basis come from device/channels. 
             if basis == "ground-rydberg":
                 op_ids = ["sigma_gr", "sigma_rr"]
             elif basis == "digital":

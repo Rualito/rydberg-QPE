@@ -57,7 +57,7 @@ class Simulation:
 
     Args:
         sequence: An instance of a Pulser Sequence that we
-            want to simulate.
+            want to simulate.Expect
         sampling_rate: The fraction of samples that we wish to
             extract from the pulse sequence to simulate. Has to be a
             value between 0.05 and 1.0.
