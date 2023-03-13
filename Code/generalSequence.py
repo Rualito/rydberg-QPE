@@ -8,6 +8,9 @@ from typing import Any, Optional, Tuple, Union, cast, overload
 from pulser.register.base_register import BaseRegister, QubitId
 from collections.abc import Iterable, Mapping
 
+from generalDevice import GeneralDevice
+from pulser.register.mappable_reg import MappableRegister
+
 
 class GeneralSequence(Sequence):
     pass
@@ -17,7 +20,10 @@ class GeneralSequence(Sequence):
     # set_magnetic_field()
     # declare_channel()
     # measure()
+    def __init__(self, register: Union[BaseRegister, MappableRegister], device: GeneralDevice):
+        super().__init__(register, device)
     def declare_channel(self, name: str, channel_id: str, initial_target: Optional[Union[QubitId, Iterable[QubitId]]] = None) -> None:
+        self._in_multi = True
         self.set_magnetic_field_multi()
         
         return super().declare_channel(name, channel_id, initial_target)

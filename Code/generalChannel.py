@@ -45,9 +45,8 @@ class GeneralChannel(Channel):
     alkali_atom: arc.AlkaliAtom=arc.Rubidium()
     state1_lbl: str = 'r1'
     state2_lbl: str = 'r2'
-    basis: str = ''  # arbitrary name for the basis, only has to identify transition
-    state_dict: dict = field(default_factory=dict)
-    
+    # state_dict: dict = field(default_factory=dict)
+    basis_name: str = str((state1_lbl, state2_lbl))
     
     @property
     def _internal_param_valid_options(self) -> dict[str, tuple[str, ...]]:
@@ -61,22 +60,22 @@ class GeneralChannel(Channel):
     def __post_init__(self) -> None:
         """Validates the channel's parameters."""
         super().__post_init__()
-
-        if ( self.state1_lbl not in ('g','h') ) and ( self.state2_lbl not in ('g', 'h')): 
-            GeneralChannel.validate_transition(self.alkali_atom, self.state_dict[self.state1_lbl], self.state_dict[self.state2_lbl])
+        # self.basis_name = str((self.state1_lbl, self.state2_lbl))
+        # if ( self.state1_lbl not in ('g','h') ) and ( self.state2_lbl not in ('g', 'h')): 
+        #     GeneralChannel.validate_transition(self.alkali_atom, self.state_dict[self.state1_lbl], self.state_dict[self.state2_lbl])
 
     
-    def validate_transition(atom:arc.AlkaliAtom, state1:tuple[int], state2:tuple[int],):
-        """
-        Checks if the transition state1 <-> state2 is valid through field excitation.
-        """ 
-        # w: 1/e^2 beam radius
-        # P: laser power
-        # atom.getRabiFrequency(n1,l1,j1,mj1,n2,l2,j2 ,mj2,P,w)
+    # def validate_transition(atom:arc.AlkaliAtom, state1:tuple[int], state2:tuple[int],):
+    #     """
+    #     Checks if the transition state1 <-> state2 is valid through field excitation.
+    #     """ 
+    #     # w: 1/e^2 beam radius
+    #     # P: laser power
+    #     # atom.getRabiFrequency(n1,l1,j1,mj1,n2,l2,j2 ,mj2,P,w)
 
-        assert np.abs(atom.getRabiFrequency(*state1,*state2,1,1))>1e-8, "Invalid transition: Rabi frequency is 0. Check selection rules (orbital momentum l or total momentum j)."
+    #     assert np.abs(atom.getRabiFrequency(*state1,*state2,1,1))>1e-8, "Invalid transition: Rabi frequency is 0. Check selection rules (orbital momentum l or total momentum j)."
 
-    # @property
+    @property
     def basis(self) -> str:
         """The addressed basis name."""
-        return str((self.state1_lbl, self.state2_lbl))
+        return self.basis_name

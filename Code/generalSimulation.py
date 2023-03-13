@@ -41,7 +41,7 @@ SUPPORTED_NOISE = {
         "eff_noise",
     },
     "XY": {"SPAM"},
-    "asym": {
+    "multi": {
         "dephasing",
         "doppler",
         "amplitude",
@@ -50,6 +50,7 @@ SUPPORTED_NOISE = {
         "eff_noise",
     }
 }
+# TODO: How to implement noise in 'multi' mode????
 
 class GeneralSimulation(Simulation):
     # __init__ doesn't look problematic
@@ -62,7 +63,7 @@ class GeneralSimulation(Simulation):
     def __init__(self, sequence: GeneralSequence, sampling_rate: float = 1, config: Optional[SimConfig] = None, evaluation_times: Union[float, str, ArrayLike] = "Full", with_modulation: bool = False) -> None:
         # super().__init__(sequence, sampling_rate, config, evaluation_times, with_modulation)
         
-        if not isinstance(sequence, sequence):
+        if not isinstance(sequence, Sequence):
             raise TypeError(
                 "The provided sequence has to be a valid "
                 "pulser.Sequence instance."
@@ -332,6 +333,7 @@ class GeneralSimulation(Simulation):
 
 
     def _build_basis_and_op_matrices(self) -> None:
+        self.basis_ids = {}
         if self._interaction == "multi":
             # Digital, ground-rydberg and XY
             self.basis_name = 'multi'
@@ -339,6 +341,12 @@ class GeneralSimulation(Simulation):
             basis = ['g', 'h'] + [*self._seq.device.state_labels]
             # digital basis + ground-rydbergs + ry-ry 
             projectors = [('g', 'g'), ('h','g')] + [ ('g',ry) for ry in self._seq.device.state_labels ] + [(r1,r2) for r1 in self._seq.device.state_labels for r2 in self._seq.device.state_labels]
+            self.basis_ids = { str(('g', 'h')): ['sigma_gg', 'sigma_gh']}
+            for proj in projectors:
+                s1, s2 = proj
+                if s1.__contains__(s2):
+                    continue
+                self.basis_ids[str( proj )] = ['sigma_'+str(proj), 'sigma_'+str((s2, s2))]
         elif self._interaction == "XY":
             self.basis_name = "XY"
             self.dim = 2
@@ -482,10 +490,10 @@ class GeneralSimulation(Simulation):
 
                             # if radius less than LeRoy radius, then assume XY interaction
                             if dist < self._seq.device.rvdw_dict[(ry1, ry2)]: 
-                                dipole_interaction += make_xy_term(q1, q2)
+                                dipole_interaction += make_xy_term(q1, q2, ry1, ry2)
                             else:
                                 # otherwise assume van der Waals
-                                dipole_interaction += make_vdw_term(q1, q2)
+                                dipole_interaction += make_vdw_term(q1, q2, ry1, ry2)
 
                 
             return dipole_interaction
@@ -504,6 +512,8 @@ class GeneralSimulation(Simulation):
                 op_ids = ["sigma_du", "sigma_dd"]
             elif basis == 'ground-RYDBERG':
                 op_ids = ["sigma_gR", "sigma_RR"]
+            elif self._interaction == 'multi':
+                op_ids = self.basis_ids[basis]
             # if self._interaction == 'asym':
             #     op_ids += "sigma_rR", "sigma_Rr"
             # elif basis == 'asym':
@@ -582,7 +592,7 @@ class GeneralSimulation(Simulation):
                 ]
             else:
                 qobj_list = [make_interaction_term()]
-
+        # print(self.samples)
         # Time dependent terms:
         for addr in self.samples:
             for basis in self.samples[addr]:
